@@ -107,43 +107,43 @@ data ShootKey :: Symbol -> Row IxSlotData -> IxSlotData -> Type where
 --   `query` is the ADT which represents the component's algebra 
 --
 --   `m` is the inner functor (which for now will always be IO)
-type EntityF :: Row SlotData -> Row SlotData -> Type -> Type -> (Type -> Type) -> (Type -> Type) -> Type -> Type
-data EntityF deps roots surface state query m a where
-  State   :: (state -> (a,state)) -> EntityF deps roots surface state query m a
+type RhizoF :: Row SlotData -> Row SlotData -> Type -> Type -> (Type -> Type) -> (Type -> Type) -> Type -> Type
+data RhizoF deps roots surface state query m a where
+  State   :: (state -> (a,state)) -> RhizoF deps roots surface state query m a
 
-  Lift    :: m a -> EntityF deps roots surface state query m a
+  Lift    :: m a -> RhizoF deps roots surface state query m a
 
   Interact :: (HasType l slot deps, KnownSymbol l)
            => Label l 
           -> (ENode slot -> STM a)
-          -> EntityF deps roots surface state query m a 
+          -> RhizoF deps roots surface state query m a 
 
   Origin   :: (Origin (Slot surface roots deps query) -> a) 
-           -> EntityF deps roots surface state query m a 
+           -> RhizoF deps roots surface state query m a 
 
-  Query    :: Coyoneda query a -> EntityF deps roots surface state query m a
+  Query    :: Coyoneda query a -> RhizoF deps roots surface state query m a
 {-
   GetShoot :: ShootKey l shoots slot 
            -> (ELeaf slot -> a) 
-           -> EntityF deps roots shoots state query m a
+           -> RhizoF deps roots shoots state query m a
 -}
   GetRoot :: SlotKey l roots slot 
           -> (ENode slot -> a)
-          -> EntityF deps roots surface state query m a
+          -> RhizoF deps roots surface state query m a
 {-
   Create   :: ShootKey l shoots (IxSlot i (Slot su rs ds q))
            -> Label l 
            -> i
            -> Model  (Slot su rs ds q)
            -> a 
-           -> EntityF deps roots shoots state query m a
+           -> RhizoF deps roots shoots state query m a
 
   Delete   :: ShootKey l (IxSlot i (Slot su rs ds q))
            -> i
            -> a 
-           -> EntityF deps roots state query m a
+           -> RhizoF deps roots state query m a
 -}
-instance Functor m => Functor (EntityF deps roots surface state query m) where
+instance Functor m => Functor (RhizoF deps roots surface state query m) where
   fmap f =  \case
         State k                  -> State (first f . k)
         Lift ma                  -> Lift (f <$> ma)
@@ -152,8 +152,8 @@ instance Functor m => Functor (EntityF deps roots surface state query m) where
         Query qb                 -> Query $ fmap f qb
         GetRoot key g            -> GetRoot key (fmap f g)
 
--- | `EntityM` is the newtype wrapper over the (church-encoded) free monad
---   formed from the `EntityF` functor. 
+-- | `RhizoM` is the newtype wrapper over the (church-encoded) free monad
+--   formed from the `RhizoF` functor. 
 --
 --   `slots` is a type of kind Row SlotData and records the data for the entity's children 
 --
@@ -162,18 +162,18 @@ instance Functor m => Functor (EntityF deps roots surface state query m) where
 --   `query` is the ADT which represents the entity's algebra 
 --
 --   `m` is the inner functor (which for now will always be IO)
-type EntityM :: Row SlotData -> Row SlotData -> Type -> Type -> (Type -> Type) -> (Type -> Type) -> Type -> Type 
-newtype EntityM deps roots surface state query m a = EntityM (F (EntityF deps roots surface state query m) a) 
+type RhizoM :: Row SlotData -> Row SlotData -> Type -> Type -> (Type -> Type) -> (Type -> Type) -> Type -> Type 
+newtype RhizoM deps roots surface state query m a = RhizoM (F (RhizoF deps roots surface state query m) a) 
   deriving (Functor, Applicative, Monad)
 
-instance Functor m => MonadState st (EntityM deps roots su st q m) where
-  state f = EntityM . liftF . State $ f
+instance Functor m => MonadState st (RhizoM deps roots su st q m) where
+  state f = RhizoM . liftF . State $ f
 
-instance  MonadIO m => MonadIO (EntityM deps roots su st q m) where
-  liftIO m = EntityM . liftF . Lift . liftIO $ m
+instance  MonadIO m => MonadIO (RhizoM deps roots su st q m) where
+  liftIO m = RhizoM . liftF . Lift . liftIO $ m
 
-instance MonadTrans (EntityM deps roots su st q ) where
-  lift = EntityM . liftF . Lift
+instance MonadTrans (RhizoM deps roots su st q ) where
+  lift = RhizoM . liftF . Lift
 
 -- for readable partial application 
 class a ~ b => Is a b where 
@@ -241,7 +241,7 @@ data Renderer  state surface where
 
 newtype Handler  slot query deps roots surface state 
   = Handler {getHandler :: Store (Chart deps roots) 
-                                 (AlgebraQ query :~> EntityM  deps roots surface state query IO)}
+                                 (AlgebraQ query :~> RhizoM  deps roots surface state query IO)}
 
 class Forall ks c => All c ks where 
   allC :: Dict (Forall ks c)
@@ -890,6 +890,7 @@ class ( SlotD (Compat root) slot
   coherentRec :: Dict (SlotR (All (Coherent root)) slot)
   coherentRec = Dict 
 
+-- the surface and query types do not affect coherence 
 coherentSUQ :: forall su su' q q' root rs ds 
              . Coherent root (Slot su rs ds q) :- Coherent root (Slot su' rs ds q') 
 coherentSUQ = unmapDict go 

@@ -30,15 +30,12 @@ data RootOf :: Path -> Type where
          => TMVar (Entity root) 
          -> RootOf parent
 
-mkENode :: Entity slot -> ENode slot 
-mkENode = undefined 
-
 popRoots :: Entity (Slot su rs ds q) -> STM (ETree rs) 
 popRoots (Entity e) = readTVar e >>= \t-> case pos t of 
   ExEvalState (EvalState _ _ roots _ _ _) -> pure roots 
 
 instance Locate ('Begin ':> 'Start (Slot  s rs ds q)) where 
-  locate Here' e = pure $ mkENode e 
+  locate Here' e = pure $ ENode e 
 
 instance (rs .! l) ~ (Slot s' rs' ds' q') =>  Locate ('Begin :> 'Start ( Slot s rs ds q) :> 'Down (l ':= Slot s' rs' ds' q')) where 
   locate (ChildA' key@SlotKey old) e = locate old e >>= \case 

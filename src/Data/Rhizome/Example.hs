@@ -154,8 +154,10 @@ type CountersSlots = "counterA" .== Slot String Empty Empty CounterLogic
 type SlotI' i su cs ds q = IxSlot i (Slot su cs ds q)
 
 counters 
-  :: Model
-      (Slot
+  :: Spec 
+      ()
+      (
+        Slot
         --Surface 
         String
 
@@ -169,7 +171,7 @@ counters
         --Algebra
         CountersLogic
       )
-counters = install (MkModels $ #counterA .== mkContainer counter .+ #counterB .== counter)  MkSpec {
+counters =  MkSpec {
     initialState = ()
   , handleQuery = mkQHandler myChart runCounters 
   , renderer    = mkSimpleRender show

@@ -28,8 +28,8 @@ type SlotI i su cs ds q = IxSlot i (Slot su cs ds q)
 
 origin :: forall deps roots surface state query r 
        . (Origin (Slot surface roots deps query) -> r) 
-      -> EntityM deps roots surface state query IO r
-origin f = EntityM . liftF $ Origin f 
+      -> RhizoM deps roots surface state query IO r
+origin f = RhizoM . liftF $ Origin f 
 
 data ContainerLogic :: Type -> SlotData -> Type -> Type where 
   Tell :: forall i su rs ds q x
@@ -80,7 +80,7 @@ mkContainer (Model (MkSpec iSt b rndr ds) mdls ) = flip Model mdls $ MkSpec {
       runContainerLogic :: forall x
                          . Chart ds rs
                         -> ContainerLogic i (Slot su rs ds q) x
-                        -> EntityM ds rs (M.Map i (Entity (Slot su rs ds q))) (M.Map i (Entity (Slot su rs ds q))) (ContainerLogic i (Slot su rs ds q)) IO x
+                        -> RhizoM ds rs (M.Map i (Entity (Slot su rs ds q))) (M.Map i (Entity (Slot su rs ds q))) (ContainerLogic i (Slot su rs ds q)) IO x
       runContainerLogic _ = \case 
         Tell i q x -> gets (M.lookup i) >>= \case 
           Nothing -> pure x
@@ -102,7 +102,7 @@ mkContainer (Model (MkSpec iSt b rndr ds) mdls ) = flip Model mdls $ MkSpec {
                           rs
                           ds
                           (ContainerLogic i (Slot su rs ds q)))
-                  -> EntityM ds rs (M.Map i (Entity (Slot su rs ds q))) (M.Map i (Entity (Slot su rs ds q))) (ContainerLogic i (Slot su rs ds q)) IO () 
+                  -> RhizoM ds rs (M.Map i (Entity (Slot su rs ds q))) (M.Map i (Entity (Slot su rs ds q))) (ContainerLogic i (Slot su rs ds q)) IO () 
          goCreate i mdl orgn = unOrigin orgn (go mdl)
           where 
                 go :: forall source. Model (Slot su rs ds q)
@@ -115,7 +115,7 @@ mkContainer (Model (MkSpec iSt b rndr ds) mdls ) = flip Model mdls $ MkSpec {
                                 ds
                                 (ContainerLogic i (Slot su rs ds q))))
                     -> TMVar (Entity source)
-                    -> EntityM
+                    -> RhizoM
                           ds
                           rs
                           (M.Map i (Entity (Slot su rs ds q)))
@@ -133,7 +133,7 @@ mkContainer (Model (MkSpec iSt b rndr ds) mdls ) = flip Model mdls $ MkSpec {
                    . i
                   -> Model (Slot su rs ds q)
                   -> Origin (Slot su rs ds (ContainerLogic i (Slot su rs ds q)))
-                  -> EntityM ds rs (M.Map i (Entity (Slot su rs ds q))) (M.Map i (Entity (Slot su rs ds q))) (ContainerLogic i (Slot su rs ds q)) IO () 
+                  -> RhizoM ds rs (M.Map i (Entity (Slot su rs ds q))) (M.Map i (Entity (Slot su rs ds q))) (ContainerLogic i (Slot su rs ds q)) IO () 
          goCreate i mdl org@(MkOrigin tmv) =  unOrigin org (go mdl) 
            where 
 

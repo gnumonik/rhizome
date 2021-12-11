@@ -31,28 +31,28 @@ mkSimpleRender :: (state -> surface)
                -> Renderer state surface 
 mkSimpleRender f = MkRenderer f (const $ pure ())
 
--- | `queryHandler` takes a function of type (forall x. query x -> EntityM slots state query m)
+-- | `queryHandler` takes a function of type (forall x. query x -> RhizoM slots state query m)
 --   and packages it into a boxed natural transformation. 
 queryHandler :: forall query roots state deps surface 
-        . (query ~> EntityM deps roots surface state query IO)
-       -> AlgebraQ query :~> EntityM deps roots surface state query IO 
+        . (query ~> RhizoM deps roots surface state query IO)
+       -> AlgebraQ query :~> RhizoM deps roots surface state query IO 
 queryHandler eval = NT $ \(Q q) -> unCoyoneda (\g -> fmap g . eval) q 
 
 emptyChart :: Chart  Empty Empty 
 emptyChart = MkChart {mkDeps = Proxy, mkRoots = Proxy}
 
 mkQHandler_ :: forall  slot query  state surface
-             . (forall x. query x -> EntityM Empty Empty surface state query IO x)
+             . (forall x. query x -> RhizoM Empty Empty surface state query IO x)
              -> Handler slot query Empty Empty surface state
 mkQHandler_ f = mkQHandler emptyChart (const f)   
 
 mkQHandler :: forall source slot query deps roots  state  surface 
             . Chart deps roots  
-           -> (forall x. Chart  deps roots  -> query x -> EntityM  deps roots surface state query IO x)
+           -> (forall x. Chart  deps roots  -> query x -> RhizoM  deps roots surface state query IO x)
            -> Handler  slot query deps roots surface state 
 mkQHandler p eval = Handler $ store accessor p 
   where 
-    accessor :: Chart deps roots -> AlgebraQ query :~> EntityM deps roots surface state query IO
+    accessor :: Chart deps roots -> AlgebraQ query :~> RhizoM deps roots surface state query IO
     accessor p = NT $ \(Q q) -> unCoyoneda (\g -> fmap g . eval p) q 
 
 unCoyoneda :: forall (q :: Type -> Type) 

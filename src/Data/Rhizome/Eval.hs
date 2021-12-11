@@ -196,7 +196,7 @@ mkEntity_ e@EvalState{..} = store go (ExEvalState e)
     go ex@(ExEvalState est@(EvalState entity@(MkSpec iState (Handler hQuery) rendr _) sta str su  env org)) 
       = Transformer $ \qx -> 
           case apNT (extract hQuery) (Q . liftCoyoneda $ qx)  of 
-            EntityM m -> do  
+            RhizoM m -> do  
               let st = foldF (evalF  (EvalState entity sta str su env org)) m
               ST.runStateT st ex
 
@@ -216,15 +216,15 @@ run i (Entity tv) =  do
 -- | Retrieves the map of the entity's children. For internal use.
 getShoot :: forall  label slot roots st q deps i
          . (KnownSymbol label, HasType label (IxSlot i slot) shoots) 
-        => EntityM deps roots shoots st q IO (ELeaf (IxSlot i slot))
-getShoot = EntityM . liftF $ GetShoot (ShootKey :: ShootKey label shoots (IxSlot i slot)) id
+        => RhizoM deps roots shoots st q IO (ELeaf (IxSlot i slot))
+getShoot = RhizoM . liftF $ GetShoot (ShootKey :: ShootKey label shoots (IxSlot i slot)) id
 
 
 -- don't export 
 -- | `getSlot` but with a SlotKey (which serves as a dictionary for ChildC) instead of the ChildC constraint 
 getShoot' ::  ShootKey label shoots slot
-         -> EntityM deps roots shoots state query IO (ELeaf slot)
-getShoot' slot = EntityM . liftF $ GetShoot slot id
+         -> RhizoM deps roots shoots state query IO (ELeaf slot)
+getShoot' slot = RhizoM . liftF $ GetShoot slot id
 -}
 -- | Construct a `Tell` query from a data constructor of a query algebra
 mkTell :: Tell q -> q ()
@@ -244,14 +244,14 @@ tell :: forall label shoots roots  i su cs ds q state query deps
       . ( HasType label (IxSlot i (Slot su cs ds q)) shoots, KnownSymbol label)
      => i
      -> Tell q
-     -> EntityM deps roots state query IO ()
+     -> RhizoM deps roots state query IO ()
 tell i = tell_ @label i
 
 tell_ :: forall label shoots roots  i su cs ds q state query deps  
       . ( HasType label (IxSlot i (Slot su cs ds q)) shoots , KnownSymbol label)
      => i
      -> Tell q
-     -> EntityM deps roots shoots state query IO ()
+     -> RhizoM deps roots shoots state query IO ()
 tell_ i q = do
   ELeaf mySlot <- getShoot @label
   case M.lookup i mySlot of
@@ -268,7 +268,7 @@ tell_ i q = do
 tellAll :: forall label shoots roots  i su cs ds q state query deps  
       . (HasType label (IxSlot i (Slot su cs ds q)) shoots, KnownSymbol label)
      =>  Tell q
-     -> EntityM deps roots shoots state query IO ()
+     -> RhizoM deps roots shoots state query IO ()
 tellAll q = do
   ELeaf mySlot <- getShoot @label @shoots 
   let slotKeys = M.keys mySlot
@@ -289,14 +289,14 @@ request :: forall label i su cs ds q roots shoots state query x deps
       . (HasType label (IxSlot i (Slot su cs ds q)) shoots, KnownSymbol label)
      => i
      -> Request q x
-     -> EntityM deps roots shoots state query IO (Maybe x)
+     -> RhizoM deps roots shoots state query IO (Maybe x)
 request i = request_ @label  i
 
 request_ :: forall label i su cs ds q roots shoots state query x deps 
       . (HasType label (IxSlot i (Slot su cs ds q)) shoots, KnownSymbol label)
      => i
      -> Request q x
-     -> EntityM deps roots shoots state query IO (Maybe x)
+     -> RhizoM deps roots shoots state query IO (Maybe x)
 request_ i q = do
   ELeaf mySlot <- getShoot @label
   case M.lookup  i mySlot of
@@ -309,7 +309,7 @@ request_ i q = do
 requestAll :: forall label i su cs ds q roots shoots state query deps x 
       . (HasType label (IxSlot i (Slot su cs ds q)) shoots, KnownSymbol label)
      => Request q x
-     -> EntityM deps roots shoots state query IO [x]
+     -> RhizoM deps roots shoots state query IO [x]
 requestAll q = do
   ELeaf mySlot <- getShoot @label
   let slotKeys = M.keys mySlot
@@ -320,7 +320,7 @@ mkRequest q = q id
 
 evalF :: forall  roots  surface state query root deps a
     .  EvalState  deps roots  surface state query
-    -> EntityF deps roots surface state query IO a
+    -> RhizoF deps roots surface state query IO a
     -> ST.StateT (ExEvalState deps roots surface query) IO a
 evalF eState@EvalState{..} = \case
 
@@ -339,7 +339,7 @@ evalF eState@EvalState{..} = \case
   Query q -> case _entity of 
     MkSpec iState (Handler hQuery) renderR _  -> 
       case apNT (extract hQuery) (Q q) of
-        EntityM ef -> foldF (evalF (EvalState {..})) ef
+        RhizoM ef -> foldF (evalF (EvalState {..})) ef
 
   -- GetShoot key@ShootKey f ->  pure . f $ lookupLeaf key _shoots
 
@@ -383,8 +383,8 @@ delete :: forall label roots shoots state i su cs ds q query deps
       . (HasType label (IxSlot i (Slot su cs ds q)) shoots
       ,  KnownSymbol label) 
      => i 
-     -> EntityM deps roots shoots state query IO ()
-delete i = EntityM . liftF $ Delete (ShootKey :: ShootKey label shoots (IxSlot i (Slot su cs ds q))) i ()
+     -> RhizoM deps roots shoots state query IO ()
+delete i = RhizoM . liftF $ Delete (ShootKey :: ShootKey label shoots (IxSlot i (Slot su cs ds q))) i ()
 
 -- | Creates a child component at the designaed label and index from the Prototype argument.
 -- 
@@ -397,8 +397,8 @@ create :: forall l i cs  su q deps slot state query roots shoots  ds loc
         , HasType l (IxSlot i (Slot su cs ds q)) shoots) 
        => i
        -> Model (Slot su cs ds q)
-       -> EntityM deps roots shoots state query IO ()
-create  i p = EntityM . liftF $ Create (ShootKey @l ) Label i p ()
+       -> RhizoM deps roots shoots state query IO ()
+create  i p = RhizoM . liftF $ Create (ShootKey @l ) Label i p ()
 
 -}
 
@@ -408,5 +408,5 @@ observe :: forall l i su cs ds q deps roots state query surface m a
           , HasType l (Slot su cs ds q) deps) 
          => Label l 
          -> (su -> a) 
-         -> EntityM deps roots surface state query m a
-observe l f = EntityM . liftF $ Interact l (\(ENode e) -> f <$> peekSurface e)
+         -> RhizoM deps roots surface state query m a
+observe l f = RhizoM . liftF $ Interact l (\(ENode e) -> f <$> peekSurface e)
