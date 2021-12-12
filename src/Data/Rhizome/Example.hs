@@ -65,9 +65,8 @@ instance TOP c
 counter :: Model (SimpleSlot String CounterLogic)
 counter =  mkSimpleModel $ MkSpec {
     initialState = 0 :: Int
-  , handleQuery  = mkQHandler_ runCounterLogic 
+  , handleQuery  = mkQHandler runCounterLogic 
   , renderer     = mkSimpleRender show  -- this is a function from the component's state to its surface
-  , atlas        = emptyChart
   }
  where 
   runCounterLogic =  \case 
@@ -173,18 +172,11 @@ counters
       )
 counters =  MkSpec {
     initialState = ()
-  , handleQuery = mkQHandler myChart runCounters 
+  , handleQuery = mkQHandler runCounters 
   , renderer    = mkSimpleRender show
-  , atlas       = myChart
   }
  where
-
-   myChart = MkChart { mkDeps   = Proxy @( "counterA" .== ContainerSlot Int String Empty Empty CounterLogic)
-                     
-                     , mkRoots =  Proxy @( "counterA" .== ContainerSlot Int String Empty Empty CounterLogic
-                                        .+ "counterB" .== Slot String Empty Empty CounterLogic) }
-
-   runCounters chart = \case 
+   runCounters  = \case 
     NewCounterA n x -> do 
     --  create @"counterA1" n counter
       pure x  
@@ -198,7 +190,7 @@ counters =  MkSpec {
       pure x 
 
     TellCounter k t x  -> do  
-    --  hm <- observe #counterA id
+      hm <- observe #counterA id
     --  either (\i -> tell @"counterA1" i t) (\i -> tell @"counterB1" i t) k 
       pure x  
 

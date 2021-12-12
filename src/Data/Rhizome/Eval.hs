@@ -46,7 +46,7 @@ new_ :: forall surface roots query shoots context deps source state
         => TMVar (Entity source)
         -> Model (Slot surface roots deps query) 
         -> STM (Entity (Slot surface roots deps query))
-new_ tmv mdl@(Model spec@(MkSpec iState qHandler renderR _) ms) = do 
+new_ tmv mdl@(Model spec@(MkSpec iState qHandler renderR) ms) = do 
   eState <- initE tmv spec ms  
   e <- newTVar $ mkEntity_ eState 
   pure $ Entity e 
@@ -57,7 +57,7 @@ new_'' :: forall surface roots query shoots context deps source state
         => TMVar (Entity source)
         -> Model (Slot surface roots deps query) 
         -> STM (Entity (Slot surface roots deps query))
-new_'' tmv mdl@(Model spec@(MkSpec iState qHandler renderR _) ms) = do 
+new_'' tmv mdl@(Model spec@(MkSpec iState qHandler render) ms) = do 
   eState <- initE tmv spec ms  
   e <- newTVar $ mkEntity_ eState 
   pure $ Entity e 
@@ -72,13 +72,6 @@ new_' :: forall roots  query surface i state deps
        -> IO (Entity (Slot surface roots deps query))
 new_' spec@MkSpec{..}  ms surface  = case coherent @(Slot surface roots deps query) @(Slot surface roots deps query) of 
   (Dict,Dict,Dict,RootsW,DepsW) -> do -- ALL THE EVIDENCE
-
-          let Handler hq = handleQuery 
-
-          let myChart :: Chart deps roots  
-              myChart = pos hq
-
-          let roots = mkRoots myChart 
 
           env :: TMVar (Entity (Slot surface roots deps query)) <- newEmptyTMVarIO
 
@@ -193,9 +186,9 @@ mkEntity_ e@EvalState{..} = store go (ExEvalState e)
   where
     go :: ExEvalState deps roots  surface query  
        -> Transformer deps roots surface query  
-    go ex@(ExEvalState est@(EvalState entity@(MkSpec iState (Handler hQuery) rendr _) sta str su  env org)) 
+    go ex@(ExEvalState est@(EvalState entity@(MkSpec iState (Handler hQuery) rendr) sta str su  env org)) 
       = Transformer $ \qx -> 
-          case apNT (extract hQuery) (Q . liftCoyoneda $ qx)  of 
+          case apNT hQuery qx  of 
             RhizoM m -> do  
               let st = foldF (evalF  (EvalState entity sta str su env org)) m
               ST.runStateT st ex
@@ -337,8 +330,8 @@ evalF eState@EvalState{..} = \case
   Lift ma -> lift ma
 
   Query q -> case _entity of 
-    MkSpec iState (Handler hQuery) renderR _  -> 
-      case apNT (extract hQuery) (Q q) of
+    MkSpec iState (Handler hQuery) renderR  -> 
+      case unCoyoneda (\g -> fmap g . apNT  hQuery)  q of
         RhizoM ef -> foldF (evalF (EvalState {..})) ef
 
   -- GetShoot key@ShootKey f ->  pure . f $ lookupLeaf key _shoots

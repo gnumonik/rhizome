@@ -241,9 +241,8 @@ data Renderer  state surface where
   , onRender  :: surface -> IO ()
   } -> Renderer state surface 
 
-newtype Handler  slot query deps roots surface state 
-  = Handler {getHandler :: Store (Chart deps roots) 
-                                 (AlgebraQ query :~> RhizoM  deps roots surface state query IO)}
+newtype Handler  query deps roots surface state 
+  = Handler {getHandler :: (query :~> RhizoM  deps roots surface state query IO)}
 
 class Forall ks c => All c ks where 
   allC :: Dict (Forall ks c)
@@ -301,9 +300,9 @@ data Spec state slot where
   MkSpec :: forall state query (deps :: Row SlotData) surface roots (shoots :: Row IxSlotData) i source
           . ( WellBehaved roots ) =>
     { initialState   :: state 
-    , handleQuery    :: Handler (Slot surface roots deps query) query deps roots surface state
+    , handleQuery    :: Handler query deps roots surface state
     , renderer       :: Renderer state surface 
-    , atlas          :: Chart deps roots
+  --  , atlas          :: Chart deps roots
     } -> Spec state (Slot surface roots deps query)
 {-
 class All (Exists (Extends loc) (Segment 'Begin)) roots => ExtendAll loc roots 

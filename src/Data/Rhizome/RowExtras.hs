@@ -96,34 +96,34 @@ data MInstance :: Row k -> (Symbol -> k -> Constraint) -> k -> Type where
   MIJust    :: Inst rk c k -> MInstance rk c k 
 
 
-instL :: forall l rx c t  
+instL :: forall l rx c
        . ( WellBehaved rx 
        , ForallL rx c
        , KnownSymbol l
-       , HasType l t rx) 
-      => Rec rx -> Inst rx c t 
+       , HasType l (rx .! l) rx) 
+      => Rec rx -> Inst rx c (rx .! l) 
 instL rx = fromJust 
          . getConst 
-         $ metamorphL @_ @rx @c @(,) @Rec @(Const (Maybe (Inst rx c t))) proxy doNil doUncons doCons rx 
+         $ metamorphL @_ @rx @c @(,) @Rec @(Const (Maybe (Inst rx c (rx .! l)))) proxy doNil doUncons doCons rx 
   where 
-    proxy :: Proxy (Proxy (Const (Maybe (Inst rx c t))), Proxy (,))
+    proxy :: Proxy (Proxy (Const (Maybe (Inst rx c (rx .! l)))), Proxy (,))
     proxy = Proxy 
 
-    doNil :: Rec Empty -> Const (Maybe (Inst rx c t)) Empty
+    doNil :: Rec Empty -> Const (Maybe (Inst rx c (rx .! l))) Empty
     doNil _ = Const Nothing 
 
     doUncons :: forall l' t' p'
               . ( KnownSymbol l'  
                 , HasType l' t' p' 
                 , c l' t' 
-              ) => Label l' -> Rec p' -> (Rec (p' .- l'), Const (Maybe (Inst rx c t)) t') 
+              ) => Label l' -> Rec p' -> (Rec (p' .- l'), Const (Maybe (Inst rx c (rx .! l))) t') 
     doUncons l ry = case lazyUncons l ry of 
       (rz,e) -> case decideEquality (sing @l) (sing @l') of 
         -- this is safe. p' is a subset of rx and has unique labels. rx' .! l ~~ t. l' ~ l (in the Just branch)
         --  if p' is a subset of rx and has unique labels then 
         -- if l' ~ l, and (p' .! l' ~ t') then (rx .! l) must be inhabited and must contain a type t which is ~~ t'    
         -- (we could prove this to ghc with a stronger subset constraint, but i think we'd actually have to define that constraint in terms of this) 
-        Just r@Refl -> case Inst (sing @l) (unsafeCoerce (Dict :: Dict (c l t')) :: Dict (c l t)) :: Inst rx c t of 
+        Just r@Refl -> case Inst (sing @l) (unsafeCoerce (Dict :: Dict (c l t')) :: Dict (c l (rx .! l))) :: Inst rx c (rx .! l) of 
             myInst -> (rz, Const . Just $ myInst)
         Nothing     -> (rz, Const Nothing)
 
@@ -131,9 +131,9 @@ instL rx = fromJust
     doCons :: forall l' t' p' x  
             . (KnownSymbol l', c l' t') 
           => Label l' 
-          -> (Const (Maybe (Inst rx c t)) p',
-              Const (Maybe (Inst rx c t)) t')
-          -> Const (Maybe (Inst rx c t)) x
+          -> (Const (Maybe (Inst rx c (rx .! l))) p',
+              Const (Maybe (Inst rx c (rx .! l))) t')
+          -> Const (Maybe (Inst rx c (rx .! l))) x
     doCons _ (a,b) = case (getConst a, getConst b) of 
       (Nothing , Nothing) -> Const Nothing 
       (Just i  ,    _   ) -> Const (Just i)

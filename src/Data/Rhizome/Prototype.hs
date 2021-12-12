@@ -41,20 +41,15 @@ queryHandler eval = NT $ \(Q q) -> unCoyoneda (\g -> fmap g . eval) q
 emptyChart :: Chart  Empty Empty 
 emptyChart = MkChart {mkDeps = Proxy, mkRoots = Proxy}
 
-mkQHandler_ :: forall  slot query  state surface
-             . (forall x. query x -> RhizoM Empty Empty surface state query IO x)
-             -> Handler slot query Empty Empty surface state
-mkQHandler_ f = mkQHandler emptyChart (const f)   
 
-mkQHandler :: forall source slot query deps roots  state  surface 
-            . Chart deps roots  
-           -> (forall x. Chart  deps roots  -> query x -> RhizoM  deps roots surface state query IO x)
-           -> Handler  slot query deps roots surface state 
-mkQHandler p eval = Handler $ store accessor p 
-  where 
+mkQHandler :: forall source  query deps roots  state  surface 
+            .  (forall x. query x -> RhizoM  deps roots surface state query IO x)
+           -> Handler query deps roots surface state 
+mkQHandler eval = Handler $ NT eval 
+ {- where 
     accessor :: Chart deps roots -> AlgebraQ query :~> RhizoM deps roots surface state query IO
     accessor p = NT $ \(Q q) -> unCoyoneda (\g -> fmap g . eval p) q 
-
+-}
 unCoyoneda :: forall (q :: Type -> Type) 
                      (a :: Type) 
                      (r :: Type)

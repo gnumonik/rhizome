@@ -71,17 +71,16 @@ mkContainer :: forall i su rs ds q
               . Ord i 
              => Model (Slot su rs ds q)
              -> Model (ContainerSlot i su rs ds q)
-mkContainer (Model (MkSpec iSt b rndr ds) mdls ) = flip Model mdls $ MkSpec {
+mkContainer (Model (MkSpec iSt b rndr) mdls ) = flip Model mdls $ MkSpec {
     initialState = M.empty 
-  , handleQuery  = mkQHandler ds $ runContainerLogic 
+  , handleQuery  = mkQHandler runContainerLogic 
   , renderer     = MkRenderer id (pure . const ())
-  , atlas        = ds
+--  , atlas        = ds
   } where 
       runContainerLogic :: forall x
-                         . Chart ds rs
-                        -> ContainerLogic i (Slot su rs ds q) x
+                         . ContainerLogic i (Slot su rs ds q) x
                         -> RhizoM ds rs (M.Map i (Entity (Slot su rs ds q))) (M.Map i (Entity (Slot su rs ds q))) (ContainerLogic i (Slot su rs ds q)) IO x
-      runContainerLogic _ = \case 
+      runContainerLogic  = \case 
         Tell i q x -> gets (M.lookup i) >>= \case 
           Nothing -> pure x
           Just e  -> liftIO (run q e) >> pure x 
