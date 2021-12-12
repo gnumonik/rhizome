@@ -88,11 +88,6 @@ instance ( Exists (Each (Exists c f)) (g f xs) (g f xs (FMap f xs))
         => EachHasC g f c (g f xs t) where 
   eachHasW =  EachHasW :: EachHasW g f c (g f xs t)
 
-{-- 
-class Each (Exists c f) xs => AxEy xs f c where 
-  mapAll :: 
---}
-
 
 -- (adapted from IsA in Data.Row.Dictionaries)
 -- HasA c f t == exists a. c a => f a 
@@ -150,7 +145,6 @@ data Deriving :: (k -> Constraint) ->  (k -> Type) -> (k -> Type) -> Type -> Typ
         -> Ex c f t 
         -> Deriving c f g t
 
-
 exImpl :: Deriving c f g t
          -> (forall (x :: k). c x => g x -> h x)
          -> Deriving c f h t
@@ -164,7 +158,6 @@ discharge :: forall c f g t r
           -> r 
 discharge  (Deriving f (Ex ft)) g = g (f ft)
  
-
 allHave :: forall f c children 
         . Forall children (Exists c f) 
        => Rec children 
@@ -197,7 +190,6 @@ allTo f = R.transform @(Exists c f) @children @(Ex c f) @(Deriving c f g) go
   where 
     go :: forall t. Exists c f t => Ex c f t -> Deriving c f g t 
     go (Ex ft) = Deriving f (Ex ft)
-
 
 data Mapped :: (k -> Constraint) -> (k -> Type) -> Row k -> Row Type -> Type where 
   Mapped :: forall k 

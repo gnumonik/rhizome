@@ -18,7 +18,7 @@ import Data.Proxy
 import Control.Comonad.Store
 import Control.Concurrent.STM.TVar
 import Control.Monad.Free.Church
-import Data.Row.Internal ( Extend, Row(R), LT((:->)), FrontExtends (frontExtendsDict), FrontExtendsDict (FrontExtendsDict), metamorph )
+import Data.Row.Internal ( Extend, Row(R), LT((:->)), FrontExtends (frontExtendsDict), FrontExtendsDict (FrontExtendsDict), metamorph, biMetamorph )
 import Data.Default
 import qualified Data.Row.Records as R
 import Data.Constraint
@@ -35,9 +35,11 @@ import Control.Applicative
 import Data.Functor.Compose
 import Data.Rhizome.RowExtras
 import Data.Constraint.Deferrable 
-import Data.Singletons (KindOf, Sing, SingI (sing))
+import Data.Singletons (KindOf, Sing, SingI (sing), withSingI)
 import Data.Singletons.TypeLits (withKnownSymbol)
-
+import Data.Row.Switch
+import Data.Row.Records (lazyRemove)
+import Control.Comonad.Density
 
 
 
@@ -932,3 +934,20 @@ instance ( SlotD (Compat root) slot
 type SimpleSlot (su :: Type) (q :: Type -> Type) = Slot su Empty Empty q 
 
 type SimpleSlot' (q :: Type -> Type) = Slot () Empty Empty q 
+
+{- 
+we have: 
+
+vr: a row of (type -> type)
+
+vx: a variant of vr applied to some type (hidden in a coyoneda?)
+-}
+
+
+{-
+data Evaluator :: Row (Type -> Type) -> Type where 
+  Evaluator :: forall (rtt :: Row (Type -> Type) l (q :: Type -> Type) (f :: (Type -> Type) )
+          . ( KnownSymbol l
+          , HasType l q rtt 
+          ) => (forall x. q x -> Coyoneda ()
+-}

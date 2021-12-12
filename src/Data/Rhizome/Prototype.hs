@@ -63,6 +63,7 @@ unCoyoneda :: forall (q :: Type -> Type)
             -> r 
 unCoyoneda f (Coyoneda ba fb) = f ba fb  
 
+
 install :: Models rs -> Spec state (Slot su rs ds q) -> Model (Slot su rs ds q)
 install ms spec = Model spec ms 
 

@@ -155,11 +155,12 @@ type SlotI' i su cs ds q = IxSlot i (Slot su cs ds q)
 
 counters 
   :: Spec 
-      ()
-      (
-        Slot
-        --Surface 
-        String
+
+      () -- state 
+
+      (Slot
+ 
+        String --Surface 
 
         --Children
         (  "counterA" .== ContainerSlot Int String Empty Empty CounterLogic
@@ -168,8 +169,7 @@ counters
         --Dependencies 
         ("counterA" .== ContainerSlot Int String Empty Empty CounterLogic)
 
-        --Algebra
-        CountersLogic
+        CountersLogic -- Algebra 
       )
 counters =  MkSpec {
     initialState = ()
