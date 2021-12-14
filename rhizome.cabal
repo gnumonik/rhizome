@@ -36,6 +36,9 @@ library
       Data.Rhizome.Exists
       Data.Rhizome.Paths
       Data.Rhizome.RowExtras
+      Data.Rhizome.Container
+
+      Data.Rhizome.OOP.Method
   other-modules:
       Paths_rhizome
   hs-source-dirs:

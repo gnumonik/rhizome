@@ -24,7 +24,7 @@ import qualified Data.Row.Records as R
 import Data.Constraint
 import qualified Data.Constraint.Forall as DC
 import Data.Type.Equality (type (:~:))
-import Control.Concurrent.STM (TMVar, STM, readTMVar)
+import Control.Concurrent.STM (TMVar, STM, readTMVar, atomically)
 import Data.Functor.Constant
 import Data.Row.Dictionaries (IsA(..),As(..),ActsOn(..),As'(..), Unconstrained1, mapExtendSwap, mapHas)
 import Data.Type.Equality (type (:~:)(Refl))
@@ -40,7 +40,7 @@ import Data.Singletons.TypeLits (withKnownSymbol)
 import Data.Row.Switch
 import Data.Row.Records (lazyRemove)
 import Control.Comonad.Density
-
+import Data.Singletons.TH (singletons)
 
 
 --- *** Finish fixing paths so start doesn't have a label (this gives us an isomorphism between paths and well-formed slotdata)
@@ -789,6 +789,7 @@ instance ( HasSome (ConcretePath source slot) l (Project source)
          , WellBehaved (Project source)
          ) => Compatible source l slot
 
+
 mkProxy :: forall slots. ( AllUniqueLabels slots
          , AllUniqueLabels (R.Map Proxy slots)
          , Forall (R.Map Proxy slots) Default
@@ -929,24 +930,7 @@ instance ( SlotD (Compat root) slot
          , SlotR (All (SlotD (Compat root))) slot 
          , SlotR (All (Coherent root)) slot) => Coherent root slot 
 
-
 type SimpleSlot (su :: Type) (q :: Type -> Type) = Slot su Empty Empty q 
 
 type SimpleSlot' (q :: Type -> Type) = Slot () Empty Empty q 
 
-{- 
-we have: 
-
-vr: a row of (type -> type)
-
-vx: a variant of vr applied to some type (hidden in a coyoneda?)
--}
-
-
-{-
-data Evaluator :: Row (Type -> Type) -> Type where 
-  Evaluator :: forall (rtt :: Row (Type -> Type) l (q :: Type -> Type) (f :: (Type -> Type) )
-          . ( KnownSymbol l
-          , HasType l q rtt 
-          ) => (forall x. q x -> Coyoneda ()
--}

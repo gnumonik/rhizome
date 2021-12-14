@@ -51,7 +51,6 @@ new_ tmv mdl@(Model spec@(MkSpec iState qHandler renderR) ms) = do
   e <- newTVar $ mkEntity_ eState 
   pure $ Entity e 
 
-
 new_'' :: forall surface roots query shoots context deps source state 
         .  Coherent source (Slot surface roots deps query)
         => TMVar (Entity source)
@@ -340,7 +339,6 @@ evalF eState@EvalState{..} = \case
     (ETree roots) <- pure _roots 
     pure . f $ getRootWithKey skey roots  
 
-
  where
    getRootWithKey :: forall l roots slot. SlotKey l roots slot -> Rec (R.Map ENode roots) -> ENode slot
    getRootWithKey SlotKey nodes = case deriveHas' @ENode @l @roots @slot of 
@@ -403,3 +401,7 @@ observe :: forall l i su cs ds q deps roots state query surface m a
          -> (su -> a) 
          -> RhizoM deps roots surface state query m a
 observe l f = RhizoM . liftF $ Interact l (\(ENode e) -> f <$> peekSurface e)
+
+
+
+

@@ -1,0 +1,17 @@
+"filename", "language", "Haskell", "comment", "blank", "total"
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/Activate.hs", "Haskell", 29, 12, 9, 50
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/Container.hs", "Haskell", 113, 11, 16, 140
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/Dictionary.hs", "Haskell", 18, 0, 5, 23
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/Eval.hs", "Haskell", 226, 137, 45, 408
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/Example.hs", "Haskell", 95, 58, 55, 208
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/Exists.hs", "Haskell", 145, 29, 42, 216
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/OOP/Class.hs", "Haskell", 22, 0, 7, 29
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/OOP/Interface.hs", "Haskell", 58, 7, 10, 75
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/OOP/Method.hs", "Haskell", 122, 3, 28, 153
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/Paths.hs", "Haskell", 40, 120, 7, 167
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/Prototype.hs", "Haskell", 44, 12, 13, 69
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/RowExtras.hs", "Haskell", 195, 19, 41, 255
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/Slot.hs", "Haskell", 69, 25, 26, 120
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/Types.hs", "Haskell", 583, 177, 177, 937
+"/home/gsh/code/haskell/rhizome/src/Data/Rhizome/Zippy.hs", "Haskell", 0, 0, 1, 1
+"Total", "-", 1759, 610, 482, 2851

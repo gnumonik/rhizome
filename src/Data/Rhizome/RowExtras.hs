@@ -3,7 +3,6 @@ module Data.Rhizome.RowExtras where
 import Data.Row
 import qualified Data.Row.Records as R
 import Data.Kind
-import Data.Proxy
 import Data.Row.Records
 import Data.Row.Dictionaries 
 import Data.Row.Internal
@@ -18,11 +17,13 @@ import Unsafe.Coerce
 import Data.Singletons.TypeLits
 import Data.Rhizome.Exists 
 import Data.Row (AllUniqueLabels)
+import Data.Default
 
 -- | This is the same as @(lazyRemove l r, r .! l)@.
 lazyUncons :: KnownSymbol l => Label l -> Rec r -> (Rec (r .- l), r .! l)
 lazyUncons l r = (R.lazyRemove l r, r .! l)
 
+type ForallL :: forall k. Row k -> (Symbol -> k -> Constraint) -> Constraint 
 class ForallL (r :: Row k) (c :: Symbol -> k -> Constraint) -- (c' :: Symbol -> Constraint) 
   where
   -- | A metamorphism is an anamorphism (an unfold) followed by a catamorphism (a fold).
@@ -90,11 +91,69 @@ data Inst :: Row k -> (Symbol -> k -> Constraint) -> k -> Type where
             , HasType l t rk 
             ) => Sing l -> Dict (c l t) ->  Inst rk c t  
 
+data InstF :: Row k -> (Symbol -> k -> Constraint) -> (k -> Type) -> Symbol -> k -> Type where 
+  InstF :: forall k 
+                  (l :: Symbol) 
+                  (rk :: Row k) 
+                  (c :: Symbol -> k -> Constraint)
+                  (f :: k -> Type) 
+                  (a :: k)
+          . ( KnownSymbol l 
+            , HasType l a rk 
+            ) => Sing l -> Dict (c l a) ->  InstF rk c f l a
+
+      
+
+data InstFX :: Row k -> (Symbol -> k -> Constraint) -> (k -> Type) -> k -> Type where 
+  InstFX :: KnownSymbol l => InstF rk c f l a ->  InstFX rk c f a   
+
+data InstFY :: Row k -> (Symbol -> k -> Constraint) -> (k -> Type) -> Symbol -> Type -> Type where 
+  InstFY :: InstF rk c f l a ->  InstFY rk c f l (f a)   
+
+class InstFYC rk c f l t where 
+  instFY :: InstFY rk c f l t 
+
+instance InstFC rk c f l a => InstFYC rk c f l (f a) where 
+  instFY = case instFC @rk @c @f @l @a of 
+    inf -> InstFY inf 
+
+class InstFC rk c f l t where 
+  instFC :: InstF rk c f l t 
+
+instance (c l a, KnownSymbol l, HasType l a r) => InstFC r c f l a where 
+  instFC = InstF (sing @l) Dict  
+
+type InstK :: forall k. Row k -> (Symbol -> k -> Constraint) -> (k -> Type) -> Symbol -> k -> Constraint 
+class InstK rk c f l t where 
+  instF :: InstF rk c f l t 
+
+instance ( KnownSymbol l
+         , HasType l a rk
+         , c l a
+         ) => InstK rk c f l a where 
+  instF = InstF (sing @l) (Dict :: Dict (c l a)) 
 
 data MInstance :: Row k -> (Symbol -> k -> Constraint) -> k -> Type where 
   MINothing :: MInstance rk c k 
   MIJust    :: Inst rk c k -> MInstance rk c k 
 
+-- | An internal type used by the 'metamorph' in 'mapForall'.
+newtype MapForallL (c :: Symbol -> k -> Constraint) (f :: k -> Type) (r :: Row k) 
+  = MapForallL { unMapForallL :: Dict (ForallL (Map f r) (InstFYC r c f)) }
+
+instK :: forall k (rx :: Row k) (c :: Symbol -> k -> Constraint) 
+       . ( WellBehaved rx 
+         , ForallL rx (InstK rx c Proxy)
+         , ConjureProxy rx
+         ) => Rec (R.Map (InstFX rx c Proxy) rx) 
+instK = transformWithLabels @k @(InstK rx c Proxy) @rx @Proxy @(InstFX rx c Proxy) go proxies 
+  where 
+    proxies :: Rec (R.Map Proxy rx) 
+    proxies = conjureProxy (Proxy @rx)
+
+    go :: forall l a. (KnownSymbol l) => Dict (InstK rx c Proxy l a) -> Proxy a -> InstFX rx c Proxy a
+    go Dict Proxy = case instF @_ @rx @c @Proxy @l @a of 
+      insf@(InstF s d) -> InstFX (InstF (sing @l) d)
 
 instL :: forall l rx c
        . ( WellBehaved rx 
@@ -102,7 +161,7 @@ instL :: forall l rx c
        , KnownSymbol l
        , HasType l (rx .! l) rx) 
       => Rec rx -> Inst rx c (rx .! l) 
-instL rx = fromJust 
+instL rx = fromJust -- it's safe here^
          . getConst 
          $ metamorphL @_ @rx @c @(,) @Rec @(Const (Maybe (Inst rx c (rx .! l)))) proxy doNil doUncons doCons rx 
   where 
@@ -127,7 +186,6 @@ instL rx = fromJust
             myInst -> (rz, Const . Just $ myInst)
         Nothing     -> (rz, Const Nothing)
 
-
     doCons :: forall l' t' p' x  
             . (KnownSymbol l', c l' t') 
           => Label l' 
@@ -138,7 +196,6 @@ instL rx = fromJust
       (Nothing , Nothing) -> Const Nothing 
       (Just i  ,    _   ) -> Const (Just i)
       (_       ,  Just i) -> Const (Just i)
-
 
 data HasSome' :: (k -> Constraint) -> Symbol -> Row k -> Type where 
   HasSome :: forall k (c :: k -> Constraint) (rk :: Row k) (l :: Symbol) 
@@ -179,3 +236,16 @@ getSome :: forall k (f :: k -> Type) l (c :: k -> Constraint)  (rk :: Row k)
         -> (forall (a :: k). c a =>  f a) 
         -> Some c f 
 getSome HasSome f = Some $ f @(rk .! l)
+
+type ConjureProxy :: Row k -> Constraint 
+class ( WellBehaved rk 
+      , WellBehaved (R.Map Proxy rk) 
+      , Forall (R.Map Proxy rk) Default
+      ) => ConjureProxy rk where 
+        conjureProxy :: Proxy rk -> Rec (R.Map Proxy rk)
+        conjureProxy _ = R.default' @Default def  
+
+instance ( WellBehaved rk 
+      , WellBehaved (R.Map Proxy rk) 
+      , Forall (R.Map Proxy rk) Default
+      ) => ConjureProxy rk 
