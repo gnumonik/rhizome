@@ -39,6 +39,8 @@ library
       Data.Rhizome.Container
 
       Data.Rhizome.OOP.Method
+      Data.Rhizome.OOP.Class 
+      Data.Rhizome.OOP.Interface 
   other-modules:
       Paths_rhizome
   hs-source-dirs:

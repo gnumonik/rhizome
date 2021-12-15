@@ -118,13 +118,10 @@ class (l ~ l', t ~ t') => LTEQ l t l' t' where
   tEQ = Refl  
 instance (l ~ l', t ~ t') => LTEQ l t l' t'
 
-
-
 class (Subsumes t s, Subsumes s t) => Coextensive t s where 
   coextensive :: forall l
                . KnownSymbol l 
               => Dict ((s .! l) ~ (t .! l))
-
 
 data ImplementationW :: Interface -> SlotData -> Type where 
   ImplementationW :: forall rq su cs ds slot 

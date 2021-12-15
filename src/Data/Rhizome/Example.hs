@@ -134,7 +134,7 @@ getCount i = request i GetCount
 tick i = tell i Tick 
 
 rest i = tell i Reset 
--}
+
 
 data CountersLogic x where 
   NewCounterA    :: String -> x -> CountersLogic x 
@@ -199,8 +199,7 @@ counters =  MkSpec {
     -- pure (f output) 
 
     
-
-    
+-}
 
     
 
